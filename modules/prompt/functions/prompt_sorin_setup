@@ -95,6 +95,7 @@ function prompt_sorin_setup {
 
   # Load required functions.
   autoload -Uz add-zsh-hook
+  autoload -Uz vcs_info
 
   # Add hook for calling git-info before each command.
   add-zsh-hook precmd prompt_sorin_precmd
