@@ -32,13 +32,15 @@
 # Load dependencies.
 pmodload 'helper'
 
+local r_phase
+
 prompt_sorin_git_info() {
   if (( _prompt_sorin_precmd_async_pid > 0 )); then
     # Append Git status.
     if [[ -s "$_prompt_sorin_precmd_async_data" ]]; then
       alias typeset='typeset -g'
       source "$_prompt_sorin_precmd_async_data"
-      RPROMPT+='${git_info:+${(e)git_info[status]}}${vcs_info_msg_0_}'
+      RPROMPT+='${git_info:+${(e)git_info[status]}}${vcs_info_msg_0_}${(e)r_phase}'
       unalias typeset
     fi
 
@@ -62,6 +64,19 @@ function prompt_sorin_precmd_async {
 
   # Signal completion to parent process.
   kill -WINCH $$
+}
+
+function +vi-prompt_sorin_sethgrev() {
+  local HGRCPATH x_dump
+  HGRCPATH="/dev/null" ${vcs_comm[cmd]} phase -r ${hook_com[localrev]} 2> /dev/null \
+    | read -r x_dump r_phase
+  if [[ ${r_phase} == draft ]]; then
+    r_phase="%B%F{13}✭%f%b"
+  else
+    r_phase=""
+  fi
+
+  typeset -p r_phase >>! "$_prompt_sorin_precmd_async_data"
 }
 
 function prompt_sorin_precmd {
@@ -145,6 +160,7 @@ function prompt_sorin_setup {
   zstyle ':vcs_info:*:prompt:*' actionformats "${branch_format}${action_format}"
   zstyle ':vcs_info:*:prompt:*' formats "${branch_format}"
   zstyle ':vcs_info:*:prompt:*' nvcsformats   ""
+  zstyle ':vcs_info:*+set-hgrev-format:*' hooks prompt_sorin_sethgrev
 
   # Define prompts.
   PROMPT='${SSH_TTY:+"%F{9}%n%f%F{7}@%f%F{3}%m%f "}%F{4}${_prompt_sorin_pwd}%(!. %B%F{1}#%f%b.)${editor_info[keymap]} '
